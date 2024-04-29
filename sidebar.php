@@ -1,23 +1,57 @@
 <?php
 /**
- * The sidebar containing the main widget area
+ * Template for displaying course sidebar.
  *
- * @link https://developer.wordpress.org/themes/basics/template-files/#template-partials
- *
- * @package EduBlink
+ * @author  ThimPress
+ * @package LearnPress/Templates
+ * @version 4.0.0
  */
-if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
 
-$sidebar = apply_filters( 'edublink_get_sidebar', 'sidebar-default' );
+defined( 'ABSPATH' ) || exit;
 
-if ( ! is_active_sidebar( $sidebar ) || isset( $_GET['sidebar_disable'] ) ) :
+/**
+ * Hide sidebar if there is no content
+ */
+if ( ! is_active_sidebar( 'course-sidebar' ) && ! LearnPress::instance()->template( 'course' )->has_sidebar() ) {
 	return;
-endif;
+}
+?>
 
-echo '<aside id="secondary" class="widget-area eb-sidebar-widget ' . esc_attr( apply_filters( 'edublink_widget_area_class', 'edublink-col-lg-4' ) ) . '">';
-	echo '<div class="widget-area-wrapper">';
-		do_action( 'edublink_sidebar_before' );
-		dynamic_sidebar( $sidebar );
-		do_action( 'edublink_sidebar_after' );
-	echo '</div>';
-echo '</aside>';
+<aside class="course-summary-sidebar">
+	<div class="course-summary-sidebar__inner">
+		<div class="course-sidebar-top">
+			<?php
+			/**
+			 * LP Hook
+			 *
+			 * @since 4.0.0
+			 */
+			do_action( 'learn-press/before-course-summary-sidebar' );
+
+			/**
+			 * LP Hook
+			 *
+			 * @since 4.0.0
+			 *
+			 * @see   LP_Template_Course::course_sidebar_preview() - 10
+			 * @see   LP_Template_Course::course_featured_review() - 20
+			 */
+			do_action( 'learn-press/course-summary-sidebar' );
+
+			/**
+			 * LP Hook
+			 *
+			 * @since 4.0.0
+			 */
+			do_action( 'learn-press/after-course-summary-sidebar' );
+
+			?>
+		</div>
+
+		<?php if ( is_active_sidebar( 'course-sidebar' ) ) : ?>
+			<div class="course-sidebar-secondary">
+				<?php dynamic_sidebar( 'course-sidebar' ); ?>
+			</div>
+		<?php endif; ?>
+	</div>
+</aside>

@@ -1,95 +1,78 @@
 <?php
 /**
- * Template for displaying content of single course.
+ * Template default for displaying content of archive courses page.
+ * If you want to override layout default, please override via hook 'learn-press/list-courses/layout', or another hook inside.
+ * Override file is will be soon not support on the feature. Because it is many risks.
  *
  * @author  ThimPress
  * @package LearnPress/Templates
- * @version 4.0.0
+ * @version 4.0.2
  */
 
-use \EduBlink\Filter;
-get_header();
+//use LearnPress\TemplateHooks\Course\ListCoursesTemplate;
 
-if ( ! isset( $block_data ) ) :
-    $block_data = array();
-endif;
+defined( 'ABSPATH' ) || exit;
 
-if ( ! isset( $style ) ) :
-    $style = edublink_set_value( 'lp_course_style', 1 );
-endif;
+/**
+ * @since 4.0.0
+ *
+ * @see LP_Template_General::template_header()
+ */
+if ( ! wp_is_block_theme() ) {
+	do_action( 'learn-press/template-header' );
+}
 
-if ( isset( $_GET['course_preset'] ) ) :
-    $style = Filter::grid_layout_keys();
-endif;
+/**
+ * LP Hook
+ */
+do_action( 'learn-press/before-main-content' );
 
-$default_data = array(
-    'style' => $style
-);
+$page_title = learn_press_page_title( false );
+$classes    = [];
 
-$block_data = wp_parse_args( $block_data, $default_data );
+if ( is_active_sidebar( 'archive-courses-sidebar' ) ) {
+	$classes[] = 'has-sidebar';
+}
+/**
+ * @since 4.2.3.4
+ *
+ *  filter lp/show-archive-course/title
+ */
+?>
 
-$edublink_course_container = array();
-$masonry_status = edublink_set_value( 'lp_course_masonry_layout', false );
-$wrapper = 'edublink-lms-courses-grid edublink-row edublink-course-archive';
+<div class="lp-content-area <?php echo esc_attr( implode( $classes ) ); ?>">
+	<div class="lp-main-content">
+	<?php if ( $page_title && apply_filters( 'lp/show-archive-course/title', true ) ) : ?>
+		<header class="learn-press-courses-header">
+			<h1><?php echo wp_kses_post( $page_title ); ?></h1>
 
-if ( $masonry_status || isset( $_GET['masonry'] ) ) :
-	$wrapper = $wrapper . ' ' . 'eb-masonry-grid-wrapper';
-    $edublink_course_container[] = 'eb-masonry-item';
-endif;
+			<?php do_action( 'lp/template/archive-course/description' ); ?>
+		</header>
+	<?php endif; ?>
 
-if ( ! isset( $column ) ) :
-    $column = apply_filters( 'edublink_course_archive_grid_column', array( 'edublink-col-lg-4 edublink-col-md-6 edublink-col-sm-12' ) );
-endif;
+	<?php do_action( 'learn-press/list-courses/layout' ); ?>
+	</div>
+	<?php
+	/**
+	 * LP Hook
+	 *
+	 * @since 4.0.0
+	 */
+	do_action( 'learn-press/archive-course/sidebar' );
+	?>
+</div>
 
-if ( isset( $_GET['column'] ) ) :
-    if ( $_GET['column'] == 2 ) :
-        $column = array( 'edublink-col-lg-6 edublink-col-md-6 edublink-col-sm-12' );
-    endif;
-endif;
+<?php
+/**
+ * LP Hook
+ */
+do_action( 'learn-press/after-main-content' );
 
-if ( isset( $_GET['active_white_bg'] ) || edublink_set_value( 'lp_course_white_bg' ) ) :
-    $edublink_course_container[] = 'active-white-bg';
-endif;
-
-$edublink_course_container[] = 'edublink-course-style-' . esc_attr( $style );
-
-$edublink_course_container = array_merge( $edublink_course_container, $column );
-
-$args = array( 
-    'post_type'      => LP_COURSE_CPT,
-    'order'          => 'DESC',
-    'paged'          => get_query_var( 'paged' ) ? intval( get_query_var( 'paged' ) ) : 1,
-    'posts_per_page' => LP()->settings->get( 'learn_press_archive_course_limit' ) 
-);
-
-$args = apply_filters( 'edublink_lp_course_archive_args', $args );
-$query = new WP_Query( $args );
-
-echo '<div class="site-content-inner' . esc_attr( apply_filters( 'edublink_container_class', ' edublink-container' ) ) . '">';
-	do_action( 'edublink_before_content' );
-
-    edublink_lp_course_header_top_bar( $query );
-
-    if ( $query->have_posts() ) :
-        echo '<div class="' . esc_attr( $wrapper ) . '">';
-            while ( $query->have_posts() ) : $query->the_post(); ?>
-                <div id="post-<?php the_ID(); ?>" <?php post_class( apply_filters( 'edublink_course_loop_classes', $edublink_course_container ) ); ?> data-sal>
-                    <?php
-                        learn_press_get_template( 'custom/course-block/blocks.php', compact( 'block_data' ) );
-                    ?>
-                </div>
-                <?php
-            endwhile;
-            wp_reset_postdata();
-        echo '</div>';
-        
-        $GLOBALS['wp_query']->max_num_pages = $query->max_num_pages;
-        edublink_numeric_pagination();
-    else :
-        _e( 'Sorry, No Course Found.', 'edublink' );
-    endif;
-
-    do_action( 'edublink_after_content' );
-echo '</div>';
-
-get_footer();
+/**
+ * @since 4.0.0
+ *
+ * @see   LP_Template_General::template_footer()
+ */
+if ( ! wp_is_block_theme() ) {
+	do_action( 'learn-press/template-footer' );
+}
