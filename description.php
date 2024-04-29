@@ -1,6 +1,6 @@
 <?php
 /**
- * Elementor Controls for widget Instructor Display Name settings.
+ * Elementor Controls for widget Become a teacher settings.
  *
  * @since 4.2.3
  * @version 1.0.0
@@ -27,10 +27,10 @@ $content_fields = array_merge(
 			),
 			LPElementorControls::add_control_type(
 				'wrapper_tags',
-				esc_html__( 'Add html tag wrapper Instructor Name', 'learnpress' ),
+				esc_html__( 'Add html tag wrapper Instructor Description', 'learnpress' ),
 				[
 					[
-						'open_tag'  => '<div class="">',
+						'open_tag'  => '<div class="div">',
 						'close_tag' => '</div>',
 					],
 				],
@@ -62,26 +62,26 @@ $content_fields = array_merge(
 // Fields tab style
 $style_fields = array_merge(
 	LPElementorControls::add_fields_in_section(
-		'instructor_name',
-		esc_html__( 'Instructor name', 'learnpress' ),
+		'description',
+		esc_html__( 'Instructor Description', 'learnpress' ),
 		Controls_Manager::TAB_STYLE,
 		LPElementorControls::add_controls_style_text(
-			'title',
-			'.instructor-display-name'
+			'description',
+			'.instructor-description'
 		)
 	),
 	[]
 );
 
 return apply_filters(
-	'learn-press/elementor/instructor/title',
+	'learn-press/elementor/instructor/description',
 	array_merge(
 		apply_filters(
-			'learn-press/elementor/instructor/title/tab-content',
+			'learn-press/elementor/instructor/description/tab-content',
 			$content_fields
 		),
 		apply_filters(
-			'learn-press/elementor/instructor/title/tab-styles',
+			'learn-press/elementor/instructor/description/tab-styles',
 			$style_fields
 		)
 	)
