@@ -3,8 +3,8 @@
 if ( ! defined( 'ABSPATH' ) ) exit; // If this file is called directly, abort.
 global $post;
 
-$courses_to_show = apply_filters( 'edublink_ld_related_course_count', -1 );
-$terms           = get_the_terms( $post->ID, 'ld_course_category' );
+$courses_to_show = apply_filters( 'edublink_lp_related_course_count', 4 );
+$terms           = get_the_terms( $post->ID, 'course_category' );
 $term_ids        = array();
 
 if ( $terms ) :
@@ -13,15 +13,15 @@ if ( $terms ) :
     endforeach;
 endif;
 
-$edublink_ld_params = array(
-    'post_type'      => 'sfwd-courses',
+$args = array(
+    'post_type'      => LP_COURSE_CPT,
     'posts_per_page' => $courses_to_show,
     'order'          => 'DESC',
     'post__not_in'   => array( $post->ID ),
     'tax_query'      => array(
         'relation'   => 'AND',
         array(
-            'taxonomy' => 'ld_course_category',
+            'taxonomy' => 'course_category',
             'field'    => 'id',
             'terms'    => $term_ids,
             'operator' => 'IN'
@@ -29,20 +29,20 @@ $edublink_ld_params = array(
     )
 );
 
-$style = edublink_set_value( 'ld_related_course_style', 'default' );
+$style = edublink_set_value( 'lp_related_course_style', 'default' );
 
 if ( 'default' === $style ) :
-    $style = edublink_set_value( 'ld_course_style', 1 );
+    $style = edublink_set_value( 'lp_course_style', 1 );
 endif;
 
-$args = array(
+$block_data = array(
     'style' => $style
 );
 
-$related = new WP_Query( $edublink_ld_params );
+$related = new WP_Query( $args );
 if ( $related->have_posts() ) :
     echo '<div class="edublink-related-course-content-wrapper edublink-container">';
-        $heading = edublink_set_value( 'ld_related_course_title', __( 'Courses You May Like', 'edublink' ) );
+        $heading = edublink_set_value( 'lp_related_course_title', __( 'Courses You May Like', 'edublink' ) );
 
         if ( $heading ) :
             echo '<div class="section-title">';
@@ -55,7 +55,7 @@ if ( $related->have_posts() ) :
             echo '<div class="swiper-wrapper">';
                 while ( $related->have_posts() ) : $related->the_post();
                     echo '<div class="swiper-slide">';
-                        get_template_part( 'learndash/custom/course-block/blocks', '', $args );
+                        learn_press_get_template( 'custom/course-block/blocks.php', compact( 'block_data' ) );
                     echo '</div>';
                 endwhile;
                 wp_reset_postdata();

@@ -1,96 +1,99 @@
 <?php
 
+remove_action( 'admin_footer', 'learn_press_footer_advertisement', - 10 );
 
-require_once get_template_directory() . '/learndash/custom/review/class-review.php';
+remove_action( 'learn-press/user-profile', LP()->template( 'profile' )->func( 'login_form' ), 10 );
+remove_action( 'learn-press/user-profile', LP()->template( 'profile' )->func( 'register_form' ), 15 );
 
-require_once get_template_directory() . '/learndash/custom/helper-class.php';
+// remove breadcrumbs
+remove_action( 'learn-press/before-main-content', LP()->template( 'general' )->func( 'breadcrumb' ) );
+remove_action( 'learn-press/before-main-content', 'learn_press_breadcrumb', 10 );
+remove_action( 'learn-press/before-main-content', 'learn_press_search_form', 15 );
 
-add_filter( 'edublink_currency_symbols', 'edublink_ld_course_currency_symbols' );
+remove_all_actions( 'learn-press/course-content-summary', 10 );
+remove_all_actions( 'learn-press/course-content-summary', 15 );
+remove_all_actions( 'learn-press/course-content-summary', 30 );
+remove_all_actions( 'learn-press/course-content-summary', 35 );
+remove_all_actions( 'learn-press/course-content-summary', 40 );
+remove_all_actions( 'learn-press/course-content-summary', 80 );
 
-add_action( 'pre_get_posts', 'edublink_ld_custom_query_for_author' );
-if ( ! function_exists( 'edublink_ld_custom_query_for_author' ) ) :
-	function edublink_ld_custom_query_for_author( $query ) {
-		$author_redirect_to_courses = apply_filters( 'edublink_ld_author_redirect_to_course', false );
-	    if ( is_admin() || ! $query->is_main_query() ) :
-	        return;
-		endif;
+// remove course sidebar
+remove_all_actions( 'learn-press/course-content-summary', 85 );
+remove_all_actions( 'learn-press/course-content-summary', 100 );
 
-		if ( isset( $_GET['ldauthor'] ) ) :
-			$ldauthor = $_GET['ldauthor'];
-		else :
-			$ldauthor = false;
-		endif;
+remove_action( 'learn-press/after-courses-loop-item', 'learn_press_course_loop_item_buttons', 35 );
+remove_action( 'learn-press/after-courses-loop-item', 'learn_press_courses_loop_item_price', 20 );
+remove_action( 'learn-press/after-courses-loop-item', 'learn_press_courses_loop_item_instructor', 25 );
+remove_action( 'learn-press/courses-loop-item-title', 'learn_press_courses_loop_item_thumbnail', 10 );
+remove_action( 'learn-press/courses-loop-item-title', 'learn_press_courses_loop_item_title', 15 );
 
-		if ( is_author() && ( 'true' == $ldauthor ) && ( true == $author_redirect_to_courses ) ) :
-	        $query->set( 'post_type', array( 'sfwd-courses' ) );
-	    endif;
-	}
-endif;
-
-/**
- * Course Archive Item Per Page
+/* 
+ * Course Sidebar Button 
  */
-add_action( 'pre_get_posts', 'edublink_archive_course_item_per_page', 15 );
-if ( ! function_exists( 'edublink_archive_course_item_per_page' ) ) :
-	function edublink_archive_course_item_per_page( $query ) {
-
-		$item = edublink_set_value( 'ld_course_archive_page_items' ) ? edublink_set_value( 'ld_course_archive_page_items' ) : 9;
-
-		if ( ! is_admin() && $query->is_main_query() && is_post_type_archive( 'sfwd-courses' ) ) :
-			$query->set( 'posts_per_page', $item );
-		endif;
-		
-		return;
-	}
+if ( class_exists( 'LP_Prere_Course_Hooks' ) ) :
+	$edublink_lp_prerequisite_plugin = LP_Prere_Course_Hooks::get_instance();
+	remove_action( 'learn-press/course-buttons', [$edublink_lp_prerequisite_plugin, 'check_condition'], 1 );
 endif;
 
+/* 
+ * Remove Wishlist Button From Sidebar 
+ */
+add_action( 'edublink_course_sidebar_lp_button', LearnPress::instance()->template( 'course' )->func( 'course_enroll_button' ), 5 );
+add_action( 'edublink_course_sidebar_lp_button', LearnPress::instance()->template( 'course' )->func( 'course_purchase_button' ), 10 );
+add_action( 'edublink_course_sidebar_lp_button', LearnPress::instance()->template( 'course' )->func( 'course_external_button' ), 15 );
+add_action( 'edublink_course_sidebar_lp_button', LearnPress::instance()->template( 'course' )->func( 'button_retry' ), 20 );
+add_action( 'edublink_course_sidebar_lp_button', LearnPress::instance()->template( 'course' )->func( 'course_continue_button' ), 25 );
+add_action( 'edublink_course_sidebar_lp_button', LearnPress::instance()->template( 'course' )->func( 'course_finish_button' ), 30 );
+
+/* 
+ * Course Price With Deciaml Separator 
+ */
+add_filter( 'learn_press_course_origin_price_html', 'edublink_lp_course_price_decimal_separator', 99, 1 );
+add_filter( 'learn_press_course_price_html', 'edublink_lp_course_price_decimal_separator', 99, 1 );
+
 /**
- * LearnDash specific scripts & stylesheets.
+ * LearnPress specific scripts & stylesheets.
  *
  * @return void
  * 
  * @since 1.0.0
  */
-if ( ! function_exists( 'edublink_ld_scripts' ) ) :
-	function edublink_ld_scripts() {
-		wp_enqueue_style( 'edublink-ld-style', get_template_directory_uri() . '/assets/css/learndash.css', array(), EDUBLINK_THEME_VERSION );
-		if ( is_singular( 'sfwd-courses' ) ) :
+if ( ! function_exists( 'edublink_lp_scripts' ) ) :
+	function edublink_lp_scripts() {
+		wp_enqueue_style( 'edublink-lp-style', esc_url( get_template_directory_uri() . '/assets/css/learnpress.css' ), array( 'learnpress' ), EDUBLINK_THEME_VERSION );
+
+		if ( is_singular( LP_COURSE_CPT ) ) :
 			wp_enqueue_style( 'jquery-fancybox' );
 			wp_enqueue_script( 'jquery-fancybox' );
 		endif;
 	}
 endif;
-add_action( 'wp_enqueue_scripts', 'edublink_ld_scripts' );
+add_action( 'wp_enqueue_scripts', 'edublink_lp_scripts' );
 
 /**
- * post_class extends for learndash courses
- * 
+ * Course Page Container Class
+ *
  * @since 1.0.0
  */
-if ( ! function_exists( 'edublink_ld_course_class' ) ) :
-    function edublink_ld_course_class( $default = array() ) {
-		$terms      = get_the_terms( get_the_ID(), 'ld_course_category' );
-		$terms_html = array();
-		if ( is_array( $terms ) ) :
-			foreach ( $terms as $term ) :
-				$terms_html[] = $term->slug;
-			endforeach;
+add_filter( 'edublink_container_class', 'edublink_lp_course_container_class' );
+if ( ! function_exists( 'edublink_lp_course_container_class' ) ) :
+	function edublink_lp_course_container_class ( $class ) {
+		if ( is_singular( LP_COURSE_CPT ) ) :
+			return ' edublink-container edublink-lp-course-details-page';
+		else :
+			return $class;
 		endif;
-		$all_classes = array_merge( $terms_html, $default );
-		$classes = apply_filters( 'edublink_ld_course_class', $all_classes );
-        post_class( $classes );
-    }
+	}
 endif;
 
 /**
  * Content area class
  */
-add_filter( 'edublink_content_area_class', 'edublink_ld_content_area_class' );
+add_filter( 'edublink_content_area_class', 'edublink_lp_content_area_class' );
+if ( ! function_exists( 'edublink_lp_content_area_class' ) ) :
+	function edublink_lp_content_area_class ( $class ) {
 
-if ( ! function_exists( 'edublink_ld_content_area_class' ) ) :
-	function edublink_ld_content_area_class ( $class ) {
-
-		if ( is_post_type_archive( 'sfwd-courses' ) || is_tax( 'ld_course_category' ) || is_tax( 'ld_course_tag' ) ) :
+		if ( is_post_type_archive( LP_COURSE_CPT ) || is_tax( 'course_category' ) ) :
 
 			$course_layout = 'full_width';
 
@@ -103,7 +106,7 @@ if ( ! function_exists( 'edublink_ld_content_area_class' ) ) :
 			endif;
 		endif;
 
-		if ( is_singular( 'sfwd-courses' ) ) :
+		if ( is_singular( LP_COURSE_CPT ) ) :
 			
 			$single_course_layout = 'full_width';
 
@@ -121,67 +124,155 @@ if ( ! function_exists( 'edublink_ld_content_area_class' ) ) :
 endif;
 
 /**
- * Content area class for Author( As Instructor ) Archive
+ * Widget area class
  */
-add_filter( 'edublink_content_area_class', 'edublink_ld_author_archive_content_area_class' );
+add_filter( 'edublink_widget_area_class', 'edublink_lp_widget_area_class' );
 
-if ( ! function_exists( 'edublink_ld_author_archive_content_area_class' ) ) :
-	function edublink_ld_author_archive_content_area_class ( $class ) {
-		$author_redirect_to_courses = apply_filters( 'edublink_ld_author_redirect_to_course', false );
-		if ( isset( $_GET['ldauthor'] ) ) :
-			$ldauthor = $_GET['ldauthor'];
-		else :
-			$ldauthor = false;
-		endif;
-		if ( true == $author_redirect_to_courses && 'true' == $ldauthor ) :
-			$class = 'edublink-col-lg-12';
+if ( ! function_exists( 'edublink_lp_widget_area_class' ) ) :
+	function edublink_lp_widget_area_class ( $class ) {
+
+		if ( is_post_type_archive( LP_COURSE_CPT ) || is_tax( 'course_category' ) ) :
+
+			$course_layout = 'full_width';
+
+			if ( 'right' === $course_layout ) :
+				$class = 'edublink-col-lg-3';
+			elseif ( 'left' === $course_layout ) :
+				$class = 'edublink-col-lg-3 edublink-order-2';
+			elseif ( 'full_width' === $course_layout ) :
+				$class = '';
+			endif;
 		endif;
 
+		if ( is_singular( LP_COURSE_CPT ) ) :
+			
+			$single_course_layout = 'full_width';
+
+			if ( 'right' === $single_course_layout ) :
+				$class = 'edublink-col-lg-3';
+			elseif ( 'left' === $single_course_layout ) :
+				$class = 'edublink-col-lg-3 edublink-order-2';
+			elseif ( 'full_width' === $single_course_layout ) :
+				$class = '';
+			endif;
+		endif;
+		
 		return $class;
+
 	}
 endif;
 
 /**
- * Archive & Single Sidebar Type
+ * Sale tag for promotional courses
  */
-add_filter( 'edublink_archive_sidebar_layout', 'edublink_archive_ld_sidebar_layout' );
-add_filter( 'edublink_single_sidebar_layout', 'edublink_archive_ld_sidebar_layout' );
+if ( ! function_exists( 'edublink_lp_course_sale_tag' ) ) :
+	function edublink_lp_course_sale_tag() {
 
-if ( ! function_exists( 'edublink_archive_ld_sidebar_layout' ) ) :
-	function edublink_archive_ld_sidebar_layout ( $class ) {
-		if ( is_post_type_archive( 'sfwd-courses' ) || is_tax( 'ld_course_category' ) || is_tax( 'ld_course_tag' ) || is_singular( 'sfwd-courses' ) ) :
-			$class = 'no-sidebar';
+		$course = LP_Global::course();
+		if ( $course->get_origin_price() != $course->get_price() ) :
+			printf( '<span class="label">%s</span>', apply_filters( 'edublink_course_sale_tag_text', __( 'Sale', 'edublink' ) ) );
 		endif;
-		return $class;
 	}
 endif;
 
 /**
- * Single Course Thumbnail
+ * Sale percentage tag for promotional courses
  */
-if ( ! function_exists( 'edublink_ld_single_course_thumbnail' ) ) :
-	function edublink_ld_single_course_thumbnail(){
-		$thumb_src = wp_get_attachment_image_src( get_post_thumbnail_id( get_the_ID() ), 'full' );
-		if ( isset( $thumb_src ) && ! empty( $thumb_src ) ) :
-		    $thumb_url = $thumb_src[0];
-		else :
-		    $thumb_url = get_template_directory_uri() . '/assets/images/no-image-found.png';
+if ( ! function_exists( 'edublink_lp_course_sale_offer_in_percentage' ) ) :
+	function edublink_lp_course_sale_offer_in_percentage() {
+
+		$course = LP_Global::course();
+		$discount = round( 100 * ($course->get_origin_price() - $course->get_price()) / $course->get_origin_price() );
+		$offer = apply_filters( 'edublink_course_sale_offer_text', __( 'Off', 'edublink' ) );
+		return $discount.'%' . ' ' . $offer;
+	}
+endif;
+
+/**
+ * Add html span tag to wrap decimal separator.
+ */
+if ( ! function_exists( 'edublink_lp_course_price_decimal_separator' ) ) :
+	function edublink_lp_course_price_decimal_separator( $origin_price ) {
+		$decimal_number    = intval( LP()->settings->get( 'number_of_decimals' ) );
+		$decimal_separator = LP()->settings->get( 'decimals_separator' );
+
+		if ( $decimal_number > 0 && ! empty( $decimal_separator ) ) :
+			$decimal_position = strpos( $origin_price, $decimal_separator );
+			$decimal_part = substr( $origin_price, $decimal_position, $decimal_number + 1 );
+			$decimal_html = '<span class="decimal-separator">' . $decimal_part . '</span>';
+			$origin_price = str_replace( $decimal_part, $decimal_html, $origin_price );
 		endif;
-		echo '<div class="edublink-single-course-thumbnail" style="background-image: url(' . esc_url( $thumb_url ) . ')"></div>';
+		return $origin_price;
+	}
+endif;
+
+/**
+ * Right Side Content
+ */
+if ( ! function_exists( 'edublink_lp_course_content_sidebar' ) ) :
+	function edublink_lp_course_content_sidebar() {
+		$course = LP_Global::course();
+		$style = edublink_set_value( 'lp_course_details_style', '1' );
+		$preview_thumb = edublink_set_value( 'lp_course_preview_thumb', true );
+		$heading_status = edublink_set_value( 'lp_course_sidebar_heading_students', true );
+		$button_status = edublink_set_value( 'lp_course_sidebar_button', true );
+		$social_share_status = edublink_set_value( 'lp_course_sidebar_social_share', true );
+		$heading = edublink_set_value( 'lp_course_sidebar_heading_text', __( 'Course Includes:', 'edublink') );
+		$extra_class = $preview_thumb ? 'enable' : 'disable';
+
+		if ( isset( $_GET['course_details'] ) ) :
+			$style = in_array( $_GET['course_details'], array( 1, 2, 3, 4, 5, 6 ) ) ? $_GET['course_details'] : 1;
+		endif;
+
+		echo '<div class="edublink-course-details-sidebar eb-course-single-' . esc_attr( $style ) . ' sidebar-' . esc_attr( $extra_class ) . '">';
+			echo '<div class="edublink-course-details-sidebar-inner">';
+				if ( $preview_thumb && '4' != $style ) :
+					edublink_lp_course_preview();
+				endif;
+
+				echo '<div class="edublink-course-details-sidebar-content">';
+					if ( $heading_status && $heading ) :
+						echo '<h4 class="widget-title">' . esc_html( $heading ). '</h4>';
+					endif;
+
+					edublink_lp_course_meta_data();
+
+					do_action( 'edublink_lp_course_sidebar_after_meta' );
+
+					if ( $button_status ) :
+						echo '<div class="edublink-course-details-sidebar-buttons">';
+							LearnPress::instance()->template( 'course' )->course_buttons();
+						echo '</div>';
+					endif;
+
+					do_action( 'edublink_lp_course_sidebar_after_button' );
+
+					if ( $social_share_status ) :
+						$social_heading = edublink_set_value( 'lp_course_sidebar_social_share_heading', __( 'Share On:', 'edublink') );
+						echo '<div class="edublink-single-event-social-share">';
+							echo '<h4 class="share-title">' . esc_html( $social_heading ) . '</h4>';
+							get_template_part( 'template-parts/social', 'share' );
+						echo '</div>';
+					endif;
+
+					do_action( 'edublink_lp_course_sidebar_after_social_share' );
+				echo '</div>';
+			echo '</div>';
+		echo '</div>';
 	}
 endif;
 
 /**
  * Right Side Course Preview
  */
-if ( ! function_exists( 'edublink_ld_course_preview' ) ) :
-	function edublink_ld_course_preview() {
-		$preview_video = get_post_meta( get_the_ID(), 'edublink_ld_course_preview_video_link', true );
-		$preview_image = get_post_meta( get_the_ID(), 'edublink_ld_course_preview_image', true );
-		$video_status = edublink_set_value( 'ld_course_preview_video_popup', true );
+if ( ! function_exists( 'edublink_lp_course_preview' ) ) :
+	function edublink_lp_course_preview() {
+		$preview_video = get_post_meta( get_the_ID(), 'edublink_lp_course_preview_video_link', true );
+		$preview_image = get_post_meta( get_the_ID(), 'edublink_lp_course_preview_image', true );
+		$video_status = edublink_set_value( 'lp_course_preview_video_popup', true );
 
 		if ( empty( $preview_image ) ) :
-			$preview_image = apply_filters( 'edublink_ld_course_default_preview_image', esc_url( get_template_directory_uri() . '/assets/images/course-preview.jpg' ) );
+			$preview_image = apply_filters( 'edublink_lp_course_default_preview_image', esc_url( get_template_directory_uri() . '/assets/images/course-preview.jpg' ) );
 		endif;
 		echo '<div class="edublink-course-details-card-preview" style="background-image: url(' . esc_url( $preview_image ) . ')">';
 			if ( $video_status ) :
@@ -200,34 +291,26 @@ endif;
 /**
  * Right Side Meta Data
  */
-if ( ! function_exists( 'edublink_ld_course_meta_data' ) ) :
-	function edublink_ld_course_meta_data() {
-		$enrolled  = get_post_meta( get_the_ID(), 'edublink_ld_course_students', true );
-		$pass_mark = get_post_meta( get_the_ID(), 'edublink_ld_course_pass_mark', true );
-		$duration  = get_post_meta( get_the_ID(), 'edublink_ld_course_duration', true );
-		$access    = get_post_meta( get_the_ID(), 'edublink_ld_course_access', true );
-		$language  = get_post_meta( get_the_ID(), 'edublink_ld_course_language', true );
-		$deadline  = get_post_meta( get_the_ID(), 'edublink_ld_course_deadline', true );
-		$skill     = str_replace( '-', ' ', get_post_meta( get_the_ID(), 'edublink_ld_course_level', true ) );
-		$lessons   = learndash_get_course_steps( get_the_ID(), array( 'sfwd-lessons' ) );
-		$topics    = learndash_get_course_steps( get_the_ID(), array( 'sfwd-topic' ) );
-		$extra_meta = get_post_meta( get_the_ID(), 'edublink_ld_course_extra_meta_fields', true ); 
-		$certificate   = 'on' === get_post_meta( get_the_ID(), 'edublink_ld_course_certificate', true ) ? __( 'Yes', 'edublink' ) : __( 'No', 'edublink' );	
-		$quiz_args = new wp_Query( array(
-			'post_type'  => 'sfwd-quiz',							
-			'meta_query' => array(
-				array( 
-					'key'   => 'course_id', 
-					'value' => get_the_ID()
-				) 
-			)						
-		) );
+if ( ! function_exists( 'edublink_lp_course_meta_data' ) ) :
+	function edublink_lp_course_meta_data() {
+		$course        = \LP_Global::course();
+		$enrolled      = $course->get_users_enrolled();
+		$lessons       = $course->get_curriculum_items( 'lp_lesson' ) ? count( $course->get_curriculum_items( 'lp_lesson' ) ) : 0;
+		$quiz          = $course->get_curriculum_items( 'lp_quiz' ) ? count( $course->get_curriculum_items( 'lp_quiz' ) ) : 0;
+		$pass_mark     = get_post_meta( get_the_ID(), '_lp_passing_condition', true );
+		$level         = get_post_meta( get_the_ID(), '_lp_level', true);
+		$skill         = $level ? $level : __( 'All Levels', 'edublink');
+		$certificate   = 'on' === get_post_meta( get_the_ID(), 'edublink_lp_course_certificate', true ) ? __( 'Yes', 'edublink' ) : __( 'No', 'edublink' );	
+		$language      = get_post_meta( get_the_ID(), 'edublink_lp_course_language', true );
+		$duration_main = get_post_meta( get_the_ID(), '_lp_duration', true );
+		$duration      = edublink_lp_course_duration_customize( $duration_main );
+		$extra_meta = get_post_meta( get_the_ID(), 'edublink_lp_course_extra_meta_fields', true ); 
 
 		echo '<ul class="edublink-course-meta-informations">';
-			do_action( 'edublink_ld_course_meta_before' );
+			do_action( 'edublink_lp_course_meta_before' );
 
-			if ( edublink_set_value( 'ld_course_sidebar_price_status', true ) ) :
-				$price_label = edublink_set_value( 'ld_course_sidebar_price_label' ) ? edublink_set_value( 'ld_course_sidebar_price_label' ) : __( 'Price:', 'edublink' );
+			if ( edublink_set_value( 'lp_course_sidebar_price_status', true ) ) :
+				$price_label = edublink_set_value( 'lp_course_sidebar_price_label' ) ? edublink_set_value( 'lp_course_sidebar_price_label' ) : __( 'Price:', 'edublink' );
 				echo '<li class="edublink-course-details-features-item course-price">';
 					echo '<span class="edublink-course-feature-item-label">';
 						echo '<i class="icon-60"></i>';
@@ -235,13 +318,13 @@ if ( ! function_exists( 'edublink_ld_course_meta_data' ) ) :
 					echo '</span>';
 
 					echo '<span class="edublink-course-feature-item-value">';
-						echo wp_kses_post( EduBlink_LD_Helper::course_price() );
+						LP()->template( 'course' )->courses_loop_item_price();
 					echo '</span>';
 				echo '</li>';
 			endif;
 
-			if ( edublink_set_value( 'ld_course_instructor', true ) ) :
-				$instructor_label = edublink_set_value( 'ld_course_instructor_label' ) ? edublink_set_value( 'ld_course_instructor_label' ) : __( 'Instructor:', 'edublink' );
+			if ( edublink_set_value( 'lp_course_instructor', true ) ) :
+				$instructor_label = edublink_set_value( 'lp_course_instructor_label' ) ? edublink_set_value( 'lp_course_instructor_label' ) : __( 'Instructor:', 'edublink' );
 				echo '<li class="edublink-course-details-features-item course-instructor">';
 					echo '<span class="edublink-course-feature-item-label">';
 						echo '<i class="icon-62"></i>';
@@ -254,8 +337,8 @@ if ( ! function_exists( 'edublink_ld_course_meta_data' ) ) :
 				echo '</li>';
 			endif;
 
-			if ( ! empty( $duration ) && edublink_set_value( 'ld_course_duration', true ) ) :
-				$duration_label = edublink_set_value( 'ld_course_duration_label' ) ? edublink_set_value( 'ld_course_duration_label' ) : __( 'Duration:', 'edublink' );
+			if ( ! empty( $duration ) && edublink_set_value( 'lp_course_duration', true ) ) :
+				$duration_label = edublink_set_value( 'lp_course_duration_label' ) ? edublink_set_value( 'lp_course_duration_label' ) : __( 'Duration:', 'edublink' );
 				echo '<li class="edublink-course-details-features-item course-duration">';
 					echo '<span class="edublink-course-feature-item-label">';
 						echo '<i class="icon-61"></i>';
@@ -268,8 +351,8 @@ if ( ! function_exists( 'edublink_ld_course_meta_data' ) ) :
 				echo '</li>';
 			endif;
 
-			if ( edublink_set_value( 'ld_course_lessons', true ) ) :
-				$lessons_label = edublink_set_value( 'ld_course_lessons_label' ) ? edublink_set_value( 'ld_course_lessons_label' ) : __( 'Lessons:', 'edublink' );
+			if ( edublink_set_value( 'lp_course_lessons', true ) ) :
+				$lessons_label = edublink_set_value( 'lp_course_lessons_label' ) ? edublink_set_value( 'lp_course_lessons_label' ) : __( 'Lessons:', 'edublink' );
 				echo '<li class="edublink-course-details-features-item course-lesson">';
 					echo '<span class="edublink-course-feature-item-label">';
 						echo '<img src="' . esc_url( get_template_directory_uri() . '/assets/images/icons/books.svg' ) . '" class="edublink-course-sidebar-img-icon">';
@@ -277,13 +360,13 @@ if ( ! function_exists( 'edublink_ld_course_meta_data' ) ) :
 					echo '</span>';
 
 					echo '<span class="edublink-course-feature-item-value">';
-						echo esc_html( count( $lessons ) );
+						echo esc_html( $lessons );
 					echo '</span>';
 				echo '</li>';
 			endif;
 
-			if ( edublink_set_value( 'ld_course_students', true ) && $enrolled ) :
-				$students_label = edublink_set_value( 'ld_course_students_label' ) ? edublink_set_value( 'ld_course_students_label' ) : __( 'Students:', 'edublink' );
+			if ( edublink_set_value( 'lp_course_students', true ) ) :
+				$students_label = edublink_set_value( 'lp_course_students_label' ) ? edublink_set_value( 'lp_course_students_label' ) : __( 'Students:', 'edublink' );
 				echo '<li class="edublink-course-details-features-item course-student">';
 					echo '<span class="edublink-course-feature-item-label">';
 						echo '<i class="icon-63"></i>';
@@ -296,8 +379,8 @@ if ( ! function_exists( 'edublink_ld_course_meta_data' ) ) :
 				echo '</li>';
 			endif;
 
-			if ( ! empty( $language ) && edublink_set_value( 'ld_course_language', true ) ) :
-				$language_label = edublink_set_value( 'ld_course_language_label' ) ? edublink_set_value( 'ld_course_language_label' ) : __( 'Language:', 'edublink' );
+			if ( ! empty( $language ) && edublink_set_value( 'lp_course_language', true ) ) :
+				$language_label = edublink_set_value( 'lp_course_language_label' ) ? edublink_set_value( 'lp_course_language_label' ) : __( 'Language:', 'edublink' );
 				echo '<li class="edublink-course-details-features-item course-language">';
 					echo '<span class="edublink-course-feature-item-label">';
 						echo '<i class="icon-59"></i>';
@@ -310,8 +393,8 @@ if ( ! function_exists( 'edublink_ld_course_meta_data' ) ) :
 				echo '</li>';
 			endif;
 
-			if ( ! empty( $certificate ) && edublink_set_value( 'ld_course_certificate', true ) ) :
-				$certificate_label = edublink_set_value( 'ld_course_certificate_label' ) ? edublink_set_value( 'ld_course_certificate_label' ) : __( 'Certifications:', 'edublink' );
+			if ( ! empty( $certificate ) && edublink_set_value( 'lp_course_certificate', true ) ) :
+				$certificate_label = edublink_set_value( 'lp_course_certificate_label' ) ? edublink_set_value( 'lp_course_certificate_label' ) : __( 'Certifications:', 'edublink' );
 				echo '<li class="edublink-course-details-features-item course-certificate">';
 					echo '<span class="edublink-course-feature-item-label">';
 						echo '<i class="icon-64"></i>';
@@ -327,90 +410,226 @@ if ( ! function_exists( 'edublink_ld_course_meta_data' ) ) :
 			if ( isset( $extra_meta ) && is_array( $extra_meta ) ) :
 				foreach ( $extra_meta as $key => $meta ) :
 					if ( $meta['label'] ) :
-						$wrapper_class = $meta['wrapper_class'] ? ' ' . $meta['wrapper_class'] : '';
+						$wrapper_class = '';
+						if ( isset( $meta['wrapper_class'] ) && ! empty( $meta['wrapper_class'] ) ) :
+							$wrapper_class = ' ' . $meta['wrapper_class'];
+						endif;
 						echo '<li class="edublink-course-details-features-item' . esc_attr( $wrapper_class ) . '">';
 							echo '<span class="edublink-course-feature-item-label">';
-								if ( $meta['icon_class'] ) :
+								if (  isset( $meta['icon_class'] ) && ! empty( $meta['icon_class'] ) ) :
 									echo '<i class="' . esc_attr( $meta['icon_class'] ) . '"></i>';
 								else :
 									echo '<i class="ri-check-fill"></i>';
 								endif;
 								echo $meta['label'] ? esc_html( $meta['label'] ) : '';
 							echo '</span>';
+
 							echo $meta['value'] ? '<span class="edublink-course-feature-item-value">' . esc_html( $meta['value'] ) . '</span>' : '';
 						echo '</li>';
 					endif;
 				endforeach;
 			endif;
 
-			do_action( 'edublink_ld_course_meta_after' );
+			do_action( 'edublink_lp_course_meta_after' );
 		echo '</ul>';
+	}
+endif;
+
+/**
+ * Course instructor
+ */
+if ( ! function_exists( 'edublink_lp_course_instructor' ) ) :
+	function edublink_lp_course_instructor( $thumb_size = 60 ) {
+		echo '<div class="course-author" itemscope="" itemtype="http://schema.org/Person">';
+			printf( get_avatar( get_the_author_meta( 'ID' ), $thumb_size ) );	
+			echo '<div class="author-contain">';
+				echo '<label itemprop="jobTitle">' . __( 'Teacher', 'edublink' ) . '</label>';
+				echo '<div class="value" itemprop="name">';
+					the_author();
+				echo '</div>';
+			echo '</div>';
+		echo '</div>';
+	}
+endif;
+
+/**
+ * Course category
+ */
+if ( ! function_exists( 'edublink_lp_course_first_category' ) ) :
+	function edublink_lp_course_first_category() {
+		$first_cat = edublink_category_by_id( get_the_id(), 'course_category' );
+		if ( ! empty( $first_cat) ) :
+			echo '<div class="course-categories">';
+				echo '<label>' . __( 'Categories', 'edublink' ) . '</label>';
+				echo '<div class="value">';
+					echo '<span class="cat-links">';
+						echo wp_kses_post( $first_cat );
+					echo '</span>';
+				echo '</div>';
+			echo '</div>';
+		endif;
+	}
+endif;
+
+/**
+ * Display course ratings
+ */
+if ( ! function_exists( 'edublink_lp_course_ratings' ) ) :
+	function edublink_lp_course_ratings() {
+		if ( ! class_exists( 'LP_Addon_Course_Review_Preload' ) ) :
+			return;
+		endif;
+
+		$course_rate_res = learn_press_get_course_rate( get_the_ID(), false );
+		$course_rate     = $course_rate_res['rated'];
+		$total           = $course_rate_res['total'];
+		$ratings         = learn_press_get_course_rate_total( get_the_ID() );
+		$single_rating_text = edublink_set_value( 'text_for_rating' ) ? edublink_set_value( 'text_for_rating', __( 'Rating', 'edublink' ) ) : __( 'Rating', 'edublink' );
+		$plural_rating_text = edublink_set_value( 'text_for_ratings' ) ? edublink_set_value( 'text_for_ratings', __( 'Ratings', 'edublink' ) ) : __( 'Ratings', 'edublink' );
+		
+		echo '<div class="edublink-course-review-wrapper">';
+			learn_press_course_review_template( 'rating-stars.php', array( 'rated' => $course_rate ) );
+
+			echo '<span>';
+				echo esc_html( '(' . number_format( $course_rate, 1 ) ) . '/ ';
+				echo esc_html( $ratings ) . ' ';
+				if ( (int)$ratings > 1 ) :
+					echo esc_html( $plural_rating_text );
+				else :
+					echo esc_html( $single_rating_text );
+				endif;
+			echo ')</span>';
+		echo '</div>';
+	}
+endif;
+
+/**
+ * Display course ratings alter
+ */
+if ( ! function_exists( 'edublink_lp_course_ratings_alter' ) ) :
+	function edublink_lp_course_ratings_alter( $show_rating = false ) {
+		if ( ! class_exists( 'LP_Addon_Course_Review_Preload' ) ) :
+			return;
+		endif;
+
+		$course_rate_res = learn_press_get_course_rate( get_the_ID(), false );
+		$course_rate     = $course_rate_res['rated'];
+		$total           = $course_rate_res['total'];
+		$ratings         = learn_press_get_course_rate_total( get_the_ID() );
+		echo '<div class="edublink-course-review-wrapper">';
+			learn_press_course_review_template( 'rating-stars.php', array( 'rated' => $course_rate ) );
+
+			if ( $show_rating ) :
+				echo '<span>';
+					echo esc_html( '(' . number_format( $course_rate, 1 ) . ')' );
+				echo '</span>';
+			else :
+				echo '<span>';
+					printf( _nx( '(%s Review)', '(%s Reviews)', $ratings, 'Ratings', 'edublink' ), number_format_i18n( $ratings ) );
+				echo '</span>';
+			endif;
+		echo '</div>';
+	}
+endif;
+
+/**
+ * Display course rating value only
+ */
+if ( ! function_exists( 'edublink_lp_course_rating_value' ) ) :
+	function edublink_lp_course_rating_value() {
+		if ( ! class_exists( 'LP_Addon_Course_Review_Preload' ) ) :
+			return;
+		endif;
+
+		$course_rate_res = learn_press_get_course_rate( get_the_ID(), false );
+		$course_rate     = $course_rate_res['rated'];
+		$total           = $course_rate_res['total'];
+		$ratings         = learn_press_get_course_rate_total( get_the_ID() );
+		return number_format( $course_rate, 1 );
+	}
+endif;
+
+/**
+ * Generate wishlist icon
+ */
+if ( ! function_exists( 'edublink_lp_wishlist_icon' ) ) :
+	function edublink_lp_wishlist_icon( $course_id ){
+		$user_id = get_current_user_id();
+
+		if ( ! class_exists( 'LP_Addon_Wishlist' ) || ! $course_id ) :
+			return;
+		endif;
+
+		if ( ! $user_id ) :
+			echo '<button class="edublink-wishlist-wrapper edublink-lp-non-logged-user"></button>';
+			return;
+		endif;
+
+		$classes = array( 'course-wishlist' );
+		$state   = learn_press_user_wishlist_has_course( $course_id, $user_id ) ? 'on' : 'off';
+
+		if ( 'on' === $state ) :
+			$classes[] = 'on';
+		endif;
+		$classes = apply_filters( 'learn_press_course_wishlist_button_classes', $classes, $course_id );
+		$title   = ( 'on' === $state ) ? __( 'Remove this course from your wishlist', 'edublink' ) : __( 'Add this course to your wishlist', 'edublink' );
+
+		printf(
+			'<button class="edublink-wishlist-wrapper learn-press-course-wishlist-button-%2$d %s" data-id="%s" data-nonce="%s" title="%s"></button>',
+			join( " ", $classes ),
+			$course_id,
+			wp_create_nonce( 'course-toggle-wishlist' ),
+			$title
+		);	
+
 	}
 endif;
 
 /**
  * Related Courses
  */
-if ( ! function_exists( 'edublink_ld_related_courses' ) ) :
-	function edublink_ld_related_courses() {
-		$related_courses = edublink_set_value( 'ld_related_courses', true );
+if ( ! function_exists( 'edublink_lp_related_courses' ) ) :
+	function edublink_lp_related_courses() {
+		$related_courses = edublink_set_value( 'lp_related_courses', true );
 		if ( isset( $_GET['disable_related_courses'] ) ) :
 			$related_courses = false;
 		endif;
-
+		
 		if ( $related_courses ) :
-			get_template_part( 'learndash/custom/courses', 'related' );
+			learn_press_get_template( 'custom/courses-related.php' );
 		endif;
 	}
 endif;
 
 /**
- * Course Search Post Type
+ * Curriculum section title
  */
-add_filter( 'edublink_course_search_post_type', 'edublink_ld_course_search_post_type' );
-if ( ! function_exists( 'edublink_ld_course_search_post_type' ) ) :
-	function edublink_ld_course_search_post_type() {
-		return 'sfwd-courses';
+if ( ! function_exists( 'edublink_lp_curriculum_section_title' ) ) :
+	function edublink_lp_curriculum_section_title( $section ) {
+		learn_press_get_template( 'custom/curriculum-title.php', array( 'section' => $section ) );
 	}
 endif;
 
 /**
- * Header Course Category Slug
+ * LearnPress Course
+ * @return boolean
  */
-add_filter( 'edublink_header_course_lms_cat_slug', 'edublink_header_course_ld_cat_slug' );
-if ( ! function_exists( 'edublink_header_course_ld_cat_slug' ) ) :
-	function edublink_header_course_ld_cat_slug() {
-		return 'ld_course_category';
-	}
-endif;
+function edublink_is_lp_courses() {
+    if ( learn_press_is_courses() || learn_press_is_course_tag() || learn_press_is_course_category() || learn_press_is_course_tax() || learn_press_is_search() ) :
+        return true;
+    endif;
+    return false;
+}
 
 /**
- * Count Course Data
+ * LP breadcrumb delimiter
  */
-if ( ! function_exists( 'edublink_ld_count_published_posts' ) ) :
-	function edublink_ld_count_published_posts( $post_type ) {
 
-		$count_posts = wp_count_posts( $post_type );
+add_filter( 'learn_press_breadcrumb_defaults', 'edublink_lp_breadcrumb_delimiter' );
 
-		if ( $count_posts->publish ) :
-			return $count_posts->publish;
-		else :
-			return 0;
-		endif;
-	}
-endif;
-
-/**
- * Course Archive Search Filter
- */
-add_filter( 'edublink_ld_course_archive_args', 'edublink_ld_course_search_filter_archive' );
-if( ! function_exists( 'edublink_ld_course_search_filter_archive' ) ) :
-	function edublink_ld_course_search_filter_archive( $args ) {
-		if ( is_post_type_archive( 'sfwd-courses' ) ) :
-			if ( isset( $_REQUEST['eb_ld_course_filter'] ) && 'ld_course_search' === $_REQUEST['eb_ld_course_filter'] ) :
-				$args['s'] = sanitize_text_field( $_REQUEST['search_query'] );
-			endif;
-		endif;
+if( ! function_exists( 'edublink_lp_breadcrumb_delimiter' ) ) :
+	function edublink_lp_breadcrumb_delimiter( $args ) {
+		$args['delimiter'] = '';
 		return $args;
 	}
 endif;
@@ -418,14 +637,14 @@ endif;
 /**
  * indexing result of courses
  */
-if( ! function_exists( 'edublink_ld_course_index_result' ) ) :
-	function edublink_ld_course_index_result( $total ) {
+if( ! function_exists( 'edublink_lp_course_index_result' ) ) :
+	function edublink_lp_course_index_result( $total ) {
 		if ( 0 === $total ) :
 			$result = __( 'There are no available courses!', 'edublink' );	
 		elseif ( 1 === $total ) :
 			$result = __( 'Showing only one result.', 'edublink' );
 		else :
-			$courses_per_page = edublink_set_value( 'ld_course_archive_page_items' ) ? edublink_set_value( 'ld_course_archive_page_items' ) : 9;
+			$courses_per_page = absint( LP()->settings->get( 'archive_course_limit' ) );
 			$paged = get_query_var( 'paged' ) ? intval( get_query_var( 'paged' ) ) : 1;
 
 			$from = 1 + ( $paged - 1 ) * $courses_per_page;
@@ -444,12 +663,12 @@ endif;
 /**
  * Course archive top bar
  */
-if( ! function_exists( 'edublink_ld_course_header_top_bar' ) ) :
-	function edublink_ld_course_header_top_bar( $query ) {
+if( ! function_exists( 'edublink_lp_course_header_top_bar' ) ) :
+	function edublink_lp_course_header_top_bar( $query ) {
 		global $wp_query;
-		$top_bar      = edublink_set_value( 'ld_course_archive_top_bar', true );
-		$index      = edublink_set_value( 'ld_course_index', true );
-		$search_bar = edublink_set_value( 'ld_course_search_bar', true );
+		$top_bar      = edublink_set_value( 'lp_course_archive_top_bar', true );
+		$index      = edublink_set_value( 'lp_course_index', true );
+		$search_bar = edublink_set_value( 'lp_course_search_bar', true );
 
 		if ( true == $index && true == $search_bar ) :
 			$column = 'edublink-col-md-6';
@@ -463,14 +682,14 @@ if( ! function_exists( 'edublink_ld_course_header_top_bar' ) ) :
 					if ( true == $index ) :
 						echo '<div class="' . esc_attr( $column ) . '">';
 							echo '<span class="edublink-course-archive-index-count">';
-								edublink_ld_course_index_result( $query->found_posts );
+								edublink_lp_course_index_result( $query->found_posts );
 							echo '</span>';
 						echo '</div>';
 					endif;
 					if ( true == $search_bar ) :
 						echo '<div class="' . esc_attr( $column ) . '">';
 							echo '<div class="edublink-course-archive-search">';
-								edublink_ld_course_archive_search_bar();
+								edublink_lp_course_archive_search_bar();
 							echo '</div>';
 						echo '</div>';
 					endif;
@@ -483,16 +702,16 @@ endif;
 /**
  * Course archive search bar
  */
-if( ! function_exists( 'edublink_ld_course_archive_search_bar' ) ) :
-	function edublink_ld_course_archive_search_bar() {
+if( ! function_exists( 'edublink_lp_course_archive_search_bar' ) ) :
+	function edublink_lp_course_archive_search_bar() {
 		/*
-		 * remove param action="' . esc_url( get_post_type_archive_link( 'sfwd-courses ) ) . '"
+		 * remove param action="' . esc_url( get_post_type_archive_link( LP_COURSE_CPT ) ) . '"
 		 * if you don't want to redirect to course category archive
 		 */
 		echo '<div class="edu-search-box">';
-			echo '<form class="edublink-archive-course-search-form" method="get" action="' . esc_url( get_post_type_archive_link( 'sfwd-courses' ) ) . '">';
+			echo '<form class="edublink-archive-course-search-form" method="get" action="' . esc_url( get_post_type_archive_link( LP_COURSE_CPT ) ) . '">';
 				echo '<input type="text" value="" name="search_query" placeholder="'. __( 'Search Courses...', 'edublink' ) . '" class="input-search" autocomplete="off" />';
-				echo '<input type="hidden" value="ld_course_search" name="eb_ld_course_filter" />';
+				echo '<input type="hidden" value="lp_course_search" name="eb_lp_course_filter" />';
 				echo '<button class="search-button"><i class="icon-2"></i></button>';
 			echo '</form>';
 		echo '</div>';
@@ -500,87 +719,273 @@ if( ! function_exists( 'edublink_ld_course_archive_search_bar' ) ) :
 endif;
 
 /**
- * LearnDash Course Wishlist Active
- *
+ * Main Content Wrapper Class for LearnPress 
+ * Course Archive & Course Details
  */
-if( ! function_exists( 'is_edublink_ld_wishlist_enable' ) ) :
-	function is_edublink_ld_wishlist_enable() {
-		$status = edublink_set_value( 'ld_course_wishlist_system', true ) ? edublink_set_value( 'ld_course_wishlist_system', true ) : false;
-		return $status;
-	}
-endif;
-
-/**
- * LearnDash Course Rating Active
- *
- */
-if( ! function_exists( 'is_edublink_ld_rating_enable' ) ) :
-	function is_edublink_ld_rating_enable() {
-		$status = edublink_set_value( 'ld_course_rating_system', true ) ? edublink_set_value( 'ld_course_rating_system', true ) : false;
-		return $status;
-	}
-endif;
-
-/**
- * Get Woocommerce course price
- *
- * @since 1.0.0
- */
-if ( ! function_exists( 'edublink_get_wc_course_price' ) ) :
-	function edublink_get_wc_course_price( $product_id = null ) {
-		if ( empty( $product_id ) ) :
-			return '';
+add_filter( 'edublink_main_content_inner', 'edublink_lp_main_content_wrapper_class' );
+if( ! function_exists( 'edublink_lp_main_content_wrapper_class' ) ) :
+	function edublink_lp_main_content_wrapper_class( $class ) {
+		if ( learn_press_is_courses() || learn_press_is_course_tag() || learn_press_is_course_category() || learn_press_is_course_tax() || learn_press_is_search() ) :
+			$class = '';
+		elseif ( is_singular( LP_COURSE_CPT ) ) :
+			$class = ' edublink-row';
 		endif;
-	 
-		$product = wc_get_product( $product_id );
-	 
-		if ( ! $product ) :
-			return '';
-		endif;
-	 
-		return $product->get_price_html();
+		return $class;
 	}
 endif;
 
+/**
+ * Remove and Modify Tab Items From 
+ * LearnPress Course Details Page
+ */
+add_filter( 'learn-press/course-tabs', 'edublink_lp_instructor_tab_modify' );
+if( ! function_exists( 'edublink_lp_instructor_tab_modify' ) ) :
+	function edublink_lp_instructor_tab_modify( $tabs ) {
+		$overview_tab_title = edublink_set_value( 'lp_overview_tab_title', __( 'Overview', 'edublink' ) );
+		$instructor_tab_title = edublink_set_value( 'lp_instructor_tab_title', __( 'Instructor', 'edublink' ) );
+		$curriculum_tab_title = edublink_set_value( 'lp_curriculum_tab_title', __( 'Curriculum', 'edublink' ) );
+		$faq_tab_title = edublink_set_value( 'lp_faq_tab_title', __( 'FAQs', 'edublink' ) );
+		$reviews_tab_title = edublink_set_value( 'lp_reviews_tab_title', __( 'Reviews', 'edublink' ) );
+		$instructor_tab = edublink_set_value( 'lp_instructor_tab', true );
+		$curriculum_tab = edublink_set_value( 'lp_curriculum_tab', true );
+		$faq_tab = edublink_set_value( 'lp_faq_tab', true );
+		$reviews_tab = edublink_set_value( 'lp_reviews_tab', true );
 
+		if ( $overview_tab_title ) :
+			$tabs['overview']['title'] = $overview_tab_title;
+		endif;
+
+		if ( true == $instructor_tab ) :
+			if ( $overview_tab_title ) :
+				$tabs['instructor']['title'] = $instructor_tab_title; 
+			endif;
+		else :
+			unset( $tabs['instructor'] );
+		endif;
+
+		if ( true == $curriculum_tab ) :
+			if ( $curriculum_tab_title ) :
+				$tabs['curriculum']['title'] = $curriculum_tab_title; 
+			endif;
+		else :
+			unset( $tabs['curriculum'] );
+		endif;
+
+		if ( isset( $tabs['faqs'] ) && ! empty( $tabs['faqs'] ) ) :
+			if ( true == $faq_tab ) :
+				if ( $faq_tab_title ) :
+					$tabs['faqs']['title'] = $faq_tab_title; 
+				endif;
+			else :
+				unset( $tabs['faqs'] );
+			endif;
+		endif;
+
+		if ( class_exists( 'LP_Addon_Course_Review_Preload' ) ) :
+			if ( true == $reviews_tab ) :
+				if ( $overview_tab_title ) :
+					$tabs['reviews']['title'] = $reviews_tab_title; 
+				endif;
+			else :
+				unset( $tabs['reviews'] );
+			endif;
+		endif;
+
+		return $tabs;
+	}
+endif;
 
 /**
- * LearnDash Course Details Header
+ * Course Taxonomy Archive Page Query
+ * Only for Category( 'course_category' ) and 
+ * Tag( 'course_tag' ) Archive Pages
+ */
+add_filter( 'edublink_lp_course_archive_args', 'edublink_lp_course_taxonomy_filter_archive' );
+if( ! function_exists( 'edublink_lp_course_taxonomy_filter_archive' ) ) :
+	function edublink_lp_course_taxonomy_filter_archive( $args ) {
+		$category = get_queried_object();
+		if ( learn_press_is_course_archive() ) :
+			if ( isset( $category->taxonomy ) && 'course_category' === $category->taxonomy ) :
+				$args['tax_query'] = array(
+					array(
+						'taxonomy' => 'course_category',
+						'field'    => 'term_id',
+						'terms'    => array( $category->term_id )
+					)
+				);
+			elseif ( isset( $category->taxonomy ) && 'course_tag' === $category->taxonomy ) :
+				$args['tax_query'] = array(
+					array(
+						'taxonomy' => 'course_tag',
+						'field'    => 'term_id',
+						'terms'    => array( $category->term_id )
+					)
+				);
+			endif;
+		endif;
+		return $args;
+	}
+endif;
+
+/**
+ * Course Archive Search Filter
+ */
+add_filter( 'edublink_lp_course_archive_args', 'edublink_lp_course_search_filter_archive' );
+if( ! function_exists( 'edublink_lp_course_search_filter_archive' ) ) :
+	function edublink_lp_course_search_filter_archive( $args ) {
+		if ( learn_press_is_course_archive() ) :
+			if ( isset( $_REQUEST['eb_lp_course_filter'] ) && 'lp_course_search' === $_REQUEST['eb_lp_course_filter'] ) :
+				$args['s'] = sanitize_text_field( $_REQUEST['search_query'] );
+			endif;
+		endif;
+		return $args;
+	}
+endif;
+
+/**
+ * Course Archive Main Filter
+ */
+add_filter( 'edublink_lp_course_archive_args', 'edublink_lp_course_category_filter_archive' );
+if( ! function_exists( 'edublink_lp_course_category_filter_archive' ) ) :
+	function edublink_lp_course_category_filter_archive( $args ) {
+		if ( learn_press_is_course_archive() ) :
+			if ( ! empty( $_GET['filter-category'] ) ) :
+				if ( is_array( $_GET['filter-category'] ) ) :
+					$args['tax_query'] = array(
+						array(
+						'taxonomy'  => 'course_category',
+						'field'     => 'term_id',
+						'terms'     => array_map( 'sanitize_text_field', $_GET['filter-category'] ),
+						'compare'   => 'IN'
+						)
+					);
+				else :
+					$args['tax_query'] = array(
+						array(
+							'taxonomy'  => 'course_category',
+							'field'     => 'term_id',
+							'terms'     => sanitize_text_field( $_GET['filter-category'] ),
+							'compare'   => '=='
+						)
+					);
+				endif;
+			endif;
+
+			if ( ! empty( $_GET['filter-level'] ) ) :
+				if ( is_array( $_GET['filter-level'] ) ) :
+					$args['meta_query'][] = array(
+						'key'     => '_lp_level',
+						'value'   => array_map( 'sanitize_text_field', $_GET['filter-level'] ),
+						'compare' => 'IN'
+					);
+				else :
+					$args['meta_query'][] = array(
+						'key'     => '_lp_level',
+						'value'   => sanitize_text_field( $_GET['filter-level'] ),
+						'compare' => '='
+					);
+				endif;
+            endif;
+        endif;
+		return $args;
+	}
+endif;
+
+/**
+ * Course Duration
  *
  */
-if( ! function_exists( 'edublink_ld_course_details_header' ) ) :
-	function edublink_ld_course_details_header( $style ) {
+if( ! function_exists( 'edublink_lp_course_duration_customize' ) ) :
+	function edublink_lp_course_duration_customize( $duration ) {
+		$duration_number = absint( $duration );
+		$duration_text = str_replace( $duration_number, '', $duration );
+		$duration_text = trim( $duration_text );
+
+		switch ( $duration_text ) :
+			case 'minute':
+				$duration_text = $duration_number > 1 ? __( 'minutes', 'edublink' ) : __( 'minute', 'edublink' );
+				break;
+			case 'hour':
+				$duration_text = $duration_number > 1 ? __( 'hours', 'edublink' ) : __( 'hour', 'edublink' );
+				break;
+			case 'day':
+				$duration_text = $duration_number > 1 ? __( 'days', 'edublink' ) : __( 'day', 'edublink' );
+				break;
+			case 'week':
+				$duration_text = $duration_number > 1 ? __( 'weeks', 'edublink' ) : __( 'week', 'edublink' );
+				break;
+		endswitch;
+		return $duration_number . ' ' . $duration_text;
+	}
+endif;
+
+/**
+ * LearnPress External Button Text
+ *
+ */
+add_filter( 'learn-press/course-external-link-text', 'edublink_lp_external_link_text' );
+function edublink_lp_external_link_text( $default ) {
+	$text = edublink_set_value( 'eb_lp_external_link_text' );
+	return $text ? $text : $default;
+}
+
+/**
+ * LearnPress Purchase Button Text
+ *
+ */
+add_filter( 'learn-press/purchase-course-button-text', 'edublink_lp_course_purchase_button_text' );
+function edublink_lp_course_purchase_button_text( $default ) {
+	$text = edublink_set_value( 'eb_lp_purchase_button_text' );
+	return $text ? $text : $default;
+}
+
+/**
+ * LearnPress Enroll Button Text
+ *
+ */
+add_filter( 'learn-press/enroll-course-button-text', 'edublink_lp_course_enroll_button_text' );
+function edublink_lp_course_enroll_button_text( $default ) {
+	$text = edublink_set_value( 'eb_lp_enroll_button_text' );
+	return $text ? $text : $default;
+}
+
+/**
+ * LearnPress Course Details Header
+ *
+ */
+if( ! function_exists( 'edublink_lp_course_details_header' ) ) :
+	function edublink_lp_course_details_header( $style ) {
 		switch ( $style ):
 			case 1:
-				edublink_ld_course_details_header_default_style();
+				edublink_lp_course_details_header_default_style();
 				break;
 			case 2:
-				edublink_ld_course_details_header_default_style( 'dark-version' );
+				edublink_lp_course_details_header_default_style( 'dark-version' );
 				break;
 			case 3:
-				edublink_ld_course_details_header_default_style();
+				edublink_lp_course_details_header_default_style();
 				break;
 			case 4:
-				edublink_ld_course_details_header_style_2();
+				edublink_lp_course_details_header_style_2();
 				break;
 			case 5:
-				edublink_ld_course_details_header_default_style( 'style-5' );
+				edublink_lp_course_details_header_default_style( 'style-5' );
 				break;
 			case 6:
-				edublink_ld_course_details_header_default_style( 'style-6' );
+				edublink_lp_course_details_header_default_style( 'style-6' );
 				break;
 			default:
-			edublink_ld_course_details_header_default_style();
+			edublink_lp_course_details_header_default_style();
 		endswitch;
 	}
 endif;
 
 /**
- * LearnDash Course Details Header Default Style
+ * LearnPress Course Details Header Default Style
  *
  */
-if( ! function_exists( 'edublink_ld_course_details_header_default_style' ) ) :
-	function edublink_ld_course_details_header_default_style( $style = null ) {
+if( ! function_exists( 'edublink_lp_course_details_header_default_style' ) ) :
+	function edublink_lp_course_details_header_default_style( $style = null ) {
 		$style = $style ? ' ' . esc_attr( $style ) : '';
 		echo '<div class="edublink-course-page-header edublink-course-page-header' . esc_attr( $style ) . '">';
 			echo '<div class="eb-course-header-breadcrumb">';
@@ -599,7 +1004,7 @@ if( ! function_exists( 'edublink_ld_course_details_header_default_style' ) ) :
 						echo '</div>';
 						
 						echo '<div class="edublink-course-header-meta">';
-							edublink_breadcrumb_ld_course_meta();
+							edublink_breadcrumb_lp_course_meta();
 						echo '</div>';
 					echo '</div>';
 				echo '</div>';
@@ -616,13 +1021,13 @@ if( ! function_exists( 'edublink_ld_course_details_header_default_style' ) ) :
 endif;
 
 /**
- * LearnDash Course Details Header Style 2
+ * LearnPress Course Details Header Style 2
  *
  */
-if( ! function_exists( 'edublink_ld_course_details_header_style_2' ) ) :
-	function edublink_ld_course_details_header_style_2() {
+if( ! function_exists( 'edublink_lp_course_details_header_style_2' ) ) :
+	function edublink_lp_course_details_header_style_2() {
 		$has_bg_image = '';
-		$breadcrumb_img   = edublink_set_value( 'ld_course_breadcrumb_image' );
+		$breadcrumb_img   = edublink_set_value( 'lp_course_breadcrumb_image' );
 		$title = get_the_title();
 		$style = array();
 		
@@ -640,13 +1045,12 @@ if( ! function_exists( 'edublink_ld_course_details_header_style_2' ) ) :
 endif;
 
 /**
- * LearnDash Course Breaecrumb Meta
+ * LearnPress Course Breaecrumb Meta
  *
  */
-if( ! function_exists( 'edublink_breadcrumb_ld_course_meta' ) ) :
-	function edublink_breadcrumb_ld_course_meta() {
-		global $post;
-		$category = edublink_category_by_id( get_the_ID(), 'ld_course_category' );
+if( ! function_exists( 'edublink_breadcrumb_lp_course_meta' ) ) :
+	function edublink_breadcrumb_lp_course_meta() {
+		$category = edublink_category_by_id( get_the_ID(), 'course_category' );
 		echo '<ul class="eb-course-header-meta-items">';
 			echo '<li class="instructor">';
 				echo '<i class="icon-58"></i>';
@@ -654,24 +1058,22 @@ if( ! function_exists( 'edublink_breadcrumb_ld_course_meta' ) ) :
 				echo ' ';
 				the_author();
 			echo '</li>';
-			
+
 			if ( $category ) :
 				echo '<li class="category"><i class="icon-59"></i>' . wp_kses_post( $category ) . '</li>';
 			endif;
 
-			if ( is_edublink_ld_rating_enable() ) :
-				echo '<li class="rating">';
-					$rating	= EduBlink_LD_Course_Review::get_average_ratings( $post->ID );
-					EduBlink_LD_Course_Review::display_review( $rating, 'text' );
-				echo '</li>';
-			endif;
+			echo '<li class="rating">';
+				edublink_lp_course_ratings_alter();
+			echo '</li>';
 		echo '</ul>';
 	}
 endif;
 
 /**
- * LearnDash Course Details 
+ * LearnPress Course Details 
  * Header Style 6 Shapes
+ *
  */
 if( ! function_exists( 'edublink_course_breadcrumb_header_6_shapes' ) ) :
 	function edublink_course_breadcrumb_header_6_shapes() {
@@ -708,275 +1110,15 @@ if( ! function_exists( 'edublink_course_breadcrumb_header_6_shapes' ) ) :
 endif;
 
 /**
- * Right Side Content
- */
-if ( ! function_exists( 'edublink_ld_course_content_sidebar' ) ) :
-	function edublink_ld_course_content_sidebar() {
-		$style = edublink_set_value( 'ld_course_details_style', '1' );
-		$preview_thumb = edublink_set_value( 'ld_course_preview_thumb', true );
-		$heading_status = edublink_set_value( 'ld_course_sidebar_heading_students', true );
-		$button_status = edublink_set_value( 'ld_course_sidebar_button', true );
-		$button_text = edublink_set_value( 'ld_external_button_text' ) ? edublink_set_value( 'ld_external_button_text' ) : __( 'More Info', 'edublink' );
-		$button_url = get_post_meta( get_the_ID(), 'edublink_ld_course_button_url', true );
-		$button_tab = edublink_set_value( 'ld_external_button_open_tab', true ) ? '_blank' : '_self';
-		$social_share_status = edublink_set_value( 'ld_course_sidebar_social_share', true );
-		$heading = edublink_set_value( 'ld_course_sidebar_heading_text', __( 'Course Includes:', 'edublink' ) );
-		$extra_class = $preview_thumb ? 'enable' : 'disable';
-
-		if ( isset( $_GET['course_details'] ) ) :
-			$style = in_array( $_GET['course_details'], array( 1, 2, 3, 4, 5, 6 ) ) ? $_GET['course_details'] : 1;
-		endif;
-
-		echo '<div class="edublink-course-details-sidebar eb-ld-course-sidebar eb-course-single-' . esc_attr( $style ) . ' sidebar-' . esc_attr( $extra_class ) . '">';
-			echo '<div class="edublink-course-details-sidebar-inner">';
-				if ( $preview_thumb && '4' != $style ) :
-					edublink_ld_course_preview();
-				endif;
-
-				echo '<div class="edublink-course-details-sidebar-content">';
-					if ( $heading_status && $heading ) :
-						echo '<h4 class="widget-title">' . esc_html( $heading ). '</h4>';
-					endif;
-
-					edublink_ld_course_meta_data();
-
-					do_action( 'edublink_ld_course_sidebar_after_meta' );
-
-					if ( $button_status && $button_text && $button_url ) :
-						echo '<div class="edublink-course-details-sidebar-buttons">';
-							// echo do_shortcode( '[ld_course_resume]' );
-							echo '<a class="edu-btn eb-course-details-btn" href="' . esc_url( $button_url ) . '" target="' . esc_attr( $button_tab ) . '">';
-								echo esc_html( $button_text );
-							echo '</a>';
-						echo '</div>';
-					endif;
-
-					do_action( 'edublink_ld_course_sidebar_after_button' );
-
-					if ( $social_share_status ) :
-						$social_heading = edublink_set_value( 'ld_course_sidebar_social_share_heading', __( 'Share On:', 'edublink' ) );
-						echo '<div class="edublink-single-event-social-share">';
-							echo '<h4 class="share-title">' . esc_html( $social_heading ) . '</h4>';
-							get_template_part( 'template-parts/social', 'share' );
-						echo '</div>';
-					endif;
-
-					do_action( 'edublink_ld_course_sidebar_after_social_share' );
-				echo '</div>';
-			echo '</div>';
-		echo '</div>';
-	}
-endif;
-
-/**
- * Currency symbols
- * 
- * @param  string $currency  currency code such as USD, EUR
- * @param  int    $course_id course ID
- * @return string currency symbol
+ * Enable templates override
  *
- * @since 1.0.0
+ * @return bool
+ * @since 4.0.0
  */
-if ( ! function_exists( 'edublink_ld_course_currency_symbols' ) ) :
-	function edublink_ld_course_currency_symbols( $currency, $course_id = null ) {
-		$currency_symbols = apply_filters( 'edublink_ld_course_currency_symbols', array(
-			'AED' => '&#x62f;.&#x625;',
-			'AFN' => '&#x60b;',
-			'ALL' => 'L',
-			'AMD' => 'AMD',
-			'ANG' => '&fnof;',
-			'AOA' => 'Kz',
-			'ARS' => '&#36;',
-			'AUD' => '&#36;',
-			'AWG' => 'Afl.',
-			'AZN' => 'AZN',
-			'BAM' => 'KM',
-			'BBD' => '&#36;',
-			'BDT' => '&#2547;',
-			'BGN' => '&#1083;&#1074;.',
-			'BHD' => '.&#x62f;.&#x628;',
-			'BIF' => 'Fr',
-			'BMD' => '&#36;',
-			'BND' => '&#36;',
-			'BOB' => 'Bs.',
-			'BRL' => '&#82;&#36;',
-			'BSD' => '&#36;',
-			'BTC' => '&#3647;',
-			'BTN' => 'Nu.',
-			'BWP' => 'P',
-			'BYR' => 'Br',
-			'BYN' => 'Br',
-			'BZD' => '&#36;',
-			'CAD' => '&#36;',
-			'CDF' => 'Fr',
-			'CHF' => '&#67;&#72;&#70;',
-			'CLP' => '&#36;',
-			'CNY' => '&yen;',
-			'COP' => '&#36;',
-			'CRC' => '&#x20a1;',
-			'CUC' => '&#36;',
-			'CUP' => '&#36;',
-			'CVE' => '&#36;',
-			'CZK' => '&#75;&#269;',
-			'DJF' => 'Fr',
-			'DKK' => 'DKK',
-			'DOP' => 'RD&#36;',
-			'DZD' => '&#x62f;.&#x62c;',
-			'EGP' => 'EGP',
-			'ERN' => 'Nfk',
-			'ETB' => 'Br',
-			'EUR' => '&euro;',
-			'FJD' => '&#36;',
-			'FKP' => '&pound;',
-			'GBP' => '&pound;',
-			'GEL' => '&#x20be;',
-			'GGP' => '&pound;',
-			'GHS' => '&#x20b5;',
-			'GIP' => '&pound;',
-			'GMD' => 'D',
-			'GNF' => 'Fr',
-			'GTQ' => 'Q',
-			'GYD' => '&#36;',
-			'HKD' => '&#36;',
-			'HNL' => 'L',
-			'HRK' => 'kn',
-			'HTG' => 'G',
-			'HUF' => '&#70;&#116;',
-			'IDR' => 'Rp',
-			'ILS' => '&#8362;',
-			'IMP' => '&pound;',
-			'INR' => '&#8377;',
-			'IQD' => '&#x639;.&#x62f;',
-			'IRR' => '&#xfdfc;',
-			'IRT' => '&#x062A;&#x0648;&#x0645;&#x0627;&#x0646;',
-			'ISK' => 'kr.',
-			'JEP' => '&pound;',
-			'JMD' => '&#36;',
-			'JOD' => '&#x62f;.&#x627;',
-			'JPY' => '&yen;',
-			'KES' => 'KSh',
-			'KGS' => '&#x441;&#x43e;&#x43c;',
-			'KHR' => '&#x17db;',
-			'KMF' => 'Fr',
-			'KPW' => '&#x20a9;',
-			'KRW' => '&#8361;',
-			'KWD' => '&#x62f;.&#x643;',
-			'KYD' => '&#36;',
-			'KZT' => '&#8376;',
-			'LAK' => '&#8365;',
-			'LBP' => '&#x644;.&#x644;',
-			'LKR' => '&#xdbb;&#xdd4;',
-			'LRD' => '&#36;',
-			'LSL' => 'L',
-			'LYD' => '&#x644;.&#x62f;',
-			'MAD' => '&#x62f;.&#x645;.',
-			'MDL' => 'MDL',
-			'MGA' => 'Ar',
-			'MKD' => '&#x434;&#x435;&#x43d;',
-			'MMK' => 'Ks',
-			'MNT' => '&#x20ae;',
-			'MOP' => 'P',
-			'MRU' => 'UM',
-			'MUR' => '&#x20a8;',
-			'MVR' => '.&#x783;',
-			'MWK' => 'MK',
-			'MXN' => '&#36;',
-			'MYR' => '&#82;&#77;',
-			'MZN' => 'MT',
-			'NAD' => 'N&#36;',
-			'NGN' => '&#8358;',
-			'NIO' => 'C&#36;',
-			'NOK' => '&#107;&#114;',
-			'NPR' => '&#8360;',
-			'NZD' => '&#36;',
-			'OMR' => '&#x631;.&#x639;.',
-			'PAB' => 'B/.',
-			'PEN' => 'S/',
-			'PGK' => 'K',
-			'PHP' => '&#8369;',
-			'PKR' => '&#8360;',
-			'PLN' => '&#122;&#322;',
-			'PRB' => '&#x440;.',
-			'PYG' => '&#8370;',
-			'QAR' => '&#x631;.&#x642;',
-			'RMB' => '&yen;',
-			'RON' => 'lei',
-			'RSD' => '&#1088;&#1089;&#1076;',
-			'RUB' => '&#8381;',
-			'RWF' => 'Fr',
-			'SAR' => '&#x631;.&#x633;',
-			'SBD' => '&#36;',
-			'SCR' => '&#x20a8;',
-			'SDG' => '&#x62c;.&#x633;.',
-			'SEK' => '&#107;&#114;',
-			'SGD' => '&#36;',
-			'SHP' => '&pound;',
-			'SLL' => 'Le',
-			'SOS' => 'Sh',
-			'SRD' => '&#36;',
-			'SSP' => '&pound;',
-			'STN' => 'Db',
-			'SYP' => '&#x644;.&#x633;',
-			'SZL' => 'L',
-			'THB' => '&#3647;',
-			'TJS' => '&#x405;&#x41c;',
-			'TMT' => 'm',
-			'TND' => '&#x62f;.&#x62a;',
-			'TOP' => 'T&#36;',
-			'TRY' => '&#8378;',
-			'TTD' => '&#36;',
-			'TWD' => '&#78;&#84;&#36;',
-			'TZS' => 'Sh',
-			'UAH' => '&#8372;',
-			'UGX' => 'UGX',
-			'USD' => '&#36;',
-			'UYU' => '&#36;',
-			'UZS' => 'UZS',
-			'VEF' => 'Bs F',
-			'VES' => 'Bs.S',
-			'VND' => '&#8363;',
-			'VUV' => 'Vt',
-			'WST' => 'T',
-			'XAF' => 'CFA',
-			'XCD' => '&#36;',
-			'XOF' => 'CFA',
-			'XPF' => 'Fr',
-			'YER' => '&#xfdfc;',
-			'ZAR' => '&#82;',
-			'ZMW' => 'ZK'
-		) );
-		return isset( $currency_symbols[ $currency ] ) ? $currency_symbols[ $currency ] : $currency;
+
+add_filter( 'learn-press/override-templates', 'edublink_lp_override_action' );
+if( ! function_exists( 'edublink_lp_override_action' ) ) :
+	function edublink_lp_override_action() {
+		return true;
 	}
 endif;
-
-
-function edublink_learndash_get_courses( $args = array() ) {
-
-    $args = wp_parse_args( $args, array(
-        'author' => '',
-        'fields' => ''
-    ) );
-
-    extract($args);
-    
-    $query_args = array(
-        'post_type' => 'sfwd-courses',
-        'post_status' => 'publish'
-    );
-
-    if ( ! empty( $author ) ) :
-        $query_args['author'] = $author;
-	endif;
-
-    if ( ! empty( $fields ) ) :
-        $query_args['fields'] = $fields;
-	endif;
-
-    $loop = new WP_Query($query_args);
-    $posts = array();
-	
-    if ( ! empty( $loop->posts ) ) :
-        $posts = $loop->posts;
-	endif;
-    return $posts;
-}
