@@ -1,212 +1,79 @@
 <?php
 /**
- * Dashboard Administration Screen
+ * The main template file
  *
- * @package WordPress
- * @subpackage Administration
+ * This is the most generic template file in a WordPress theme
+ * and one of the two required files for a theme (the other being style.css).
+ * It is used to display a page when nothing more specific matches a query.
+ * E.g., it puts together the home page when no home.php file exists.
+ *
+ * @link https://developer.wordpress.org/themes/basics/template-hierarchy/
+ *
+ * @package EduBlink
  */
 
-/** Load WordPress Bootstrap */
-require_once __DIR__ . '/admin.php';
+get_header();
+if ( ! isset( $edublink_blog_post_style ) ) :
+	$edublink_blog_post_style = edublink_set_value( 'blog_post_style', 'standard' );
+endif;
 
-/** Load WordPress dashboard API */
-require_once ABSPATH . 'wp-admin/includes/dashboard.php';
+if ( isset( $_GET['post_preset'] ) ) :
+	$edublink_blog_post_style = in_array( $_GET['post_preset'], array( 1, 2, 3, 'standard' ) ) ? $_GET['post_preset'] : $edublink_blog_post_style;
+endif;
 
-wp_dashboard_setup();
+$blog_layout = edublink_set_value( 'blog_archive_layout', 'right-sidebar' );
+$masonry_status = edublink_set_value( 'blog_post_masonry_layout', false );
+$blog_wrapper = 'edublink-row edublink-blog-post-archive-style-' . esc_attr( $edublink_blog_post_style );
 
-wp_enqueue_script( 'dashboard' );
+if ( ( $masonry_status || isset( $_GET['masonry'] ) ) && ( 'standard' !== $edublink_blog_post_style ) ) :
+	$blog_wrapper = $blog_wrapper . ' ' . 'eb-masonry-grid-wrapper';
+endif;
+	
+echo '<div class="site-content-inner' . esc_attr( apply_filters( 'edublink_container_class', ' edublink-container' ) ) . '">';
+	do_action( 'edublink_before_content' );
 
-if ( current_user_can( 'install_plugins' ) ) {
-	wp_enqueue_script( 'plugin-install' );
-	wp_enqueue_script( 'updates' );
-}
-if ( current_user_can( 'upload_files' ) ) {
-	wp_enqueue_script( 'media-upload' );
-}
-add_thickbox();
+	echo '<div id="primary" class="content-area ' . esc_attr( apply_filters( 'edublink_content_area_class', 'edublink-col-lg-8' ) ) . '">';
+		echo '<main id="main" class="site-main">';
 
-if ( wp_is_mobile() ) {
-	wp_enqueue_script( 'jquery-touch-punch' );
-}
+			if ( have_posts() ) :
+				if ( is_home() && ! is_front_page() ) :
+					?>
+					<header>
+						<h1 class="page-title screen-reader-text"><?php single_post_title(); ?></h1>
+					</header>
+					<?php
+				endif;
+				echo '<div class="' . esc_attr( $blog_wrapper ) . '">';
+					/* Start the Loop */
+					while ( have_posts() ) :
+						the_post();
+						/*
+						* Include the Post-Type-specific template for the content.
+						* If you want to override this in a child theme, then include a file
+						* called content-___.php (where ___ is the Post Type name) and that will be used instead.
+						*/
+						get_template_part( 'template-parts/posts/post', $edublink_blog_post_style );
+					endwhile;
+					wp_reset_postdata();
+				echo '</div>';
 
-// Used in the HTML title tag.
-$title       = __( 'Dashboard' );
-$parent_file = 'index.php';
+				if ( function_exists( 'edublink_numeric_pagination' ) ) :
+					edublink_numeric_pagination();
+				else :
+					the_posts_navigation();
+				endif;
+			else :
+				get_template_part( 'template-parts/content', 'none' );
+			endif;
 
-$help  = '<p>' . __( 'Welcome to your WordPress Dashboard!' ) . '</p>';
-$help .= '<p>' . __( 'The Dashboard is the first place you will come to every time you log into your site. It is where you will find all your WordPress tools. If you need help, just click the &#8220;Help&#8221; tab above the screen title.' ) . '</p>';
+		echo '</main>';
+	echo '</div>';
 
-$screen = get_current_screen();
-
-$screen->add_help_tab(
-	array(
-		'id'      => 'overview',
-		'title'   => __( 'Overview' ),
-		'content' => $help,
-	)
-);
-
-// Help tabs.
-
-$help  = '<p>' . __( 'The left-hand navigation menu provides links to all of the WordPress administration screens, with submenu items displayed on hover. You can minimize this menu to a narrow icon strip by clicking on the Collapse Menu arrow at the bottom.' ) . '</p>';
-$help .= '<p>' . __( 'Links in the Toolbar at the top of the screen connect your dashboard and the front end of your site, and provide access to your profile and helpful WordPress information.' ) . '</p>';
-
-$screen->add_help_tab(
-	array(
-		'id'      => 'help-navigation',
-		'title'   => __( 'Navigation' ),
-		'content' => $help,
-	)
-);
-
-$help  = '<p>' . __( 'You can use the following controls to arrange your Dashboard screen to suit your workflow. This is true on most other administration screens as well.' ) . '</p>';
-$help .= '<p>' . __( '<strong>Screen Options</strong> &mdash; Use the Screen Options tab to choose which Dashboard boxes to show.' ) . '</p>';
-$help .= '<p>' . __( '<strong>Drag and Drop</strong> &mdash; To rearrange the boxes, drag and drop by clicking on the title bar of the selected box and releasing when you see a gray dotted-line rectangle appear in the location you want to place the box.' ) . '</p>';
-$help .= '<p>' . __( '<strong>Box Controls</strong> &mdash; Click the title bar of the box to expand or collapse it. Some boxes added by plugins may have configurable content, and will show a &#8220;Configure&#8221; link in the title bar if you hover over it.' ) . '</p>';
-
-$screen->add_help_tab(
-	array(
-		'id'      => 'help-layout',
-		'title'   => __( 'Layout' ),
-		'content' => $help,
-	)
-);
-
-$help = '<p>' . __( 'The boxes on your Dashboard screen are:' ) . '</p>';
-
-if ( current_user_can( 'edit_theme_options' ) ) {
-	$help .= '<p>' . __( '<strong>Welcome</strong> &mdash; Shows links for some of the most common tasks when setting up a new site.' ) . '</p>';
-}
-
-if ( current_user_can( 'view_site_health_checks' ) ) {
-	$help .= '<p>' . __( '<strong>Site Health Status</strong> &mdash; Informs you of any potential issues that should be addressed to improve the performance or security of your website.' ) . '</p>';
-}
-
-if ( current_user_can( 'edit_posts' ) ) {
-	$help .= '<p>' . __( '<strong>At a Glance</strong> &mdash; Displays a summary of the content on your site and identifies which theme and version of WordPress you are using.' ) . '</p>';
-}
-
-$help .= '<p>' . __( '<strong>Activity</strong> &mdash; Shows the upcoming scheduled posts, recently published posts, and the most recent comments on your posts and allows you to moderate them.' ) . '</p>';
-
-if ( is_blog_admin() && current_user_can( 'edit_posts' ) ) {
-	$help .= '<p>' . __( "<strong>Quick Draft</strong> &mdash; Allows you to create a new post and save it as a draft. Also displays links to the 3 most recent draft posts you've started." ) . '</p>';
-}
-
-$help .= '<p>' . sprintf(
-	/* translators: %s: WordPress Planet URL. */
-	__( '<strong>WordPress Events and News</strong> &mdash; Upcoming events near you as well as the latest news from the official WordPress project and the <a href="%s">WordPress Planet</a>.' ),
-	__( 'https://planet.wordpress.org/' )
-) . '</p>';
-
-$screen->add_help_tab(
-	array(
-		'id'      => 'help-content',
-		'title'   => __( 'Content' ),
-		'content' => $help,
-	)
-);
-
-unset( $help );
-
-$wp_version = get_bloginfo( 'version', 'display' );
-/* translators: %s: WordPress version. */
-$wp_version_text = sprintf( __( 'Version %s' ), $wp_version );
-$is_dev_version  = preg_match( '/alpha|beta|RC/', $wp_version );
-
-if ( ! $is_dev_version ) {
-	$version_url = sprintf(
-		/* translators: %s: WordPress version. */
-		esc_url( __( 'https://wordpress.org/documentation/wordpress-version/version-%s/' ) ),
-		sanitize_title( $wp_version )
-	);
-
-	$wp_version_text = sprintf(
-		'<a href="%1$s">%2$s</a>',
-		$version_url,
-		$wp_version_text
-	);
-}
-
-$screen->set_help_sidebar(
-	'<p><strong>' . __( 'For more information:' ) . '</strong></p>' .
-	'<p>' . __( '<a href="https://wordpress.org/documentation/article/dashboard-screen/">Documentation on Dashboard</a>' ) . '</p>' .
-	'<p>' . __( '<a href="https://wordpress.org/support/forums/">Support forums</a>' ) . '</p>' .
-	'<p>' . $wp_version_text . '</p>'
-);
-
-require_once ABSPATH . 'wp-admin/admin-header.php';
-?>
-
-<div class="wrap">
-	<h1><?php echo esc_html( $title ); ?></h1>
-
-	<?php
-	if ( ! empty( $_GET['admin_email_remind_later'] ) ) :
-		/** This filter is documented in wp-login.php */
-		$remind_interval = (int) apply_filters( 'admin_email_remind_interval', 3 * DAY_IN_SECONDS );
-		$postponed_time  = get_option( 'admin_email_lifespan' );
-
-		/*
-		 * Calculate how many seconds it's been since the reminder was postponed.
-		 * This allows us to not show it if the query arg is set, but visited due to caches, bookmarks or similar.
-		 */
-		$time_passed = time() - ( $postponed_time - $remind_interval );
-
-		// Only show the dashboard notice if it's been less than a minute since the message was postponed.
-		if ( $time_passed < MINUTE_IN_SECONDS ) :
-			$message = sprintf(
-				/* translators: %s: Human-readable time interval. */
-				__( 'The admin email verification page will reappear after %s.' ),
-				human_time_diff( time() + $remind_interval )
-			);
-			wp_admin_notice(
-				$message,
-				array(
-					'type'        => 'success',
-					'dismissible' => true,
-				)
-			);
-		endif;
+	if ( 'no-sidebar' !== $blog_layout ) :
+		get_sidebar();
 	endif;
-	?>
 
-<?php
-if ( has_action( 'welcome_panel' ) && current_user_can( 'edit_theme_options' ) ) :
-	$classes = 'welcome-panel';
+	do_action( 'edublink_after_content' );
+echo '</div>';
 
-	$option = (int) get_user_meta( get_current_user_id(), 'show_welcome_panel', true );
-	// 0 = hide, 1 = toggled to show or single site creator, 2 = multisite site owner.
-	$hide = ( 0 === $option || ( 2 === $option && wp_get_current_user()->user_email !== get_option( 'admin_email' ) ) );
-	if ( $hide ) {
-		$classes .= ' hidden';
-	}
-	?>
-
-	<div id="welcome-panel" class="<?php echo esc_attr( $classes ); ?>">
-		<?php wp_nonce_field( 'welcome-panel-nonce', 'welcomepanelnonce', false ); ?>
-		<a class="welcome-panel-close" href="<?php echo esc_url( admin_url( '?welcome=0' ) ); ?>" aria-label="<?php esc_attr_e( 'Dismiss the welcome panel' ); ?>"><?php _e( 'Dismiss' ); ?></a>
-		<?php
-		/**
-		 * Fires when adding content to the welcome panel on the admin dashboard.
-		 *
-		 * To remove the default welcome panel, use remove_action():
-		 *
-		 *     remove_action( 'welcome_panel', 'wp_welcome_panel' );
-		 *
-		 * @since 3.5.0
-		 */
-		do_action( 'welcome_panel' );
-		?>
-	</div>
-<?php endif; ?>
-
-	<div id="dashboard-widgets-wrap">
-	<?php wp_dashboard(); ?>
-	</div><!-- dashboard-widgets-wrap -->
-
-</div><!-- wrap -->
-
-<?php
-wp_print_community_events_templates();
-
-require_once ABSPATH . 'wp-admin/admin-footer.php';
+get_footer();
